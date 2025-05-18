@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Student Enrollment Form</title>
+  <script>
+    const connToken = "YOUR_API_TOKEN_HERE";  // Replace with your JPDB API token
+    const dbName = "SCHOOL-DB";
+    const relName = "STUDENT-TABLE";
+
+    function disableAllFields() {
+      document.getElementById("fullName").disabled = true;
+      document.getElementById("class").disabled = true;
+      document.getElementById("birthDate").disabled = true;
+      document.getElementById("address").disabled = true;
+      document.getElementById("enrollDate").disabled = true;
+
+      document.getElementById("saveBtn").disabled = true;
+      document.getElementById("updateBtn").disabled = true;
+      document.getElementById("resetBtn").disabled = true;
+    }
+
+    function enableAllFields() {
+      document.getElementById("fullName").disabled = false;
+      document.getElementById("class").disabled = false;
+      document.getElementById("birthDate").disabled = false;
+      document.getElementById("address").disabled = false;
+      document.getElementById("enrollDate").disabled = false;
+    }
+
+    function resetForm() {
+      document.getElementById("rollNo").value = "";
+      document.getElementById("fullName").value = "";
+      document.getElementById("class").value = "";
+      document.getElementById("birthDate").value = "";
+      document.getElementById("address").value = "";
+      document.getElementById("enrollDate").value = "";
+
+      document.getElementById("rollNo").disabled = false;
+      disableAllFields();
+
+      document.getElementById("rollNo").focus();
+    }
+
+    function checkPrimaryKey() {
+      let rollNo = document.getElementById("rollNo").value;
+      if (!rollNo) {
+        alert("Roll No is required");
+        return;
+      }
+
+      let getReq = {
+        token: connToken,
+        dbName: dbName,
+        rel: relName,
+        cmd: "GET_BY_KEY",
+        key: { RollNo: rollNo }
+      };
+
+      fetch('https://api.login2explore.com:5577/api/irl', {
+        method: 'POST',
+        body: JSON.stringify(getReq),
+        headers: { 'Content-Type': 'application/json' }
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.data === undefined) {
+            // Not found — new entry
+            enableAllFields();
+            document.getElementById("saveBtn").disabled = false;
+            document.getElementById("resetBtn").disabled = false;
+            document.getElementById("rollNo").disabled = true;
+            document.getElementById("fullName").focus();
+          } else {
+            // Found — show data for update
+            fillData(data.data);
+            enableAllFields();
+            document.getElementById("rollNo").disabled = true;
+            document.getElementById("updateBtn").disabled = false;
+            document.getElementById("resetBtn").disabled = false;
+            document.getElementById("fullName").focus();
+          }
+        });
+    }
+
+    function fillData(data) {
+      document.getElementById("fullName").value = data.FullName;
+      document.getElementById("class").value = data.Class;
+      document.getElementById("birthDate").value = data.BirthDate;
+      document.getElementById("address").value = data.Address;
+      document.getElementById("enrollDate").value = data.EnrollDate;
+    }
+
+    function validateForm() {
+      let fields = ["fullName", "class", "birthDate", "address", "enrollDate"];
+      for (let field of fields) {
+        if (!document.getElementById(field).value) {
+          alert("Please fill all fields");
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function saveData() {
+      if (!validateForm()) return;
+
+      let data = {
+        RollNo: document.getElementById("rollNo").value,
+        FullName: document.getElementById("fullName").value,
+        Class: document.getElementById("class").value,
+        BirthDate: document.getElementById("birthDate").value,
+        Address: document.getElementById("address").value,
+        EnrollDate: document.getElementById("enrollDate").value,
+      };
+
+      let putReq = {
+        token: connToken,
+        dbName: dbName,
+        rel: relName,
+        cmd: "PUT",
+        jsonStr: data
+      };
+
+      fetch('https://api.login2explore.com:5577/api/iml', {
+        method: 'POST',
+        body: JSON.stringify(putReq),
+        headers: { 'Content-Type': 'application/json' }
+      }).then(res => res.json()).then(() => {
+        alert("Data saved successfully!");
+        resetForm();
+      });
+    }
+
+    function updateData() {
+      if (!validateForm()) return;
+
+      let data = {
+        RollNo: document.getElementById("rollNo").value,
+        FullName: document.getElementById("fullName").value,
+        Class: document.getElementById("class").value,
+        BirthDate: document.getElementById("birthDate").value,
+        Address: document.getElementById("address").value,
+        EnrollDate: document.getElementById("enrollDate").value,
+      };
+
+      let updateReq = {
+        token: connToken,
+        dbName: dbName,
+        rel: relName,
+        cmd: "UPDATE",
+        jsonStr: data
+      };
+
+      fetch('https://api.login2explore.com:5577/api/iml', {
+        method: 'POST',
+        body: JSON.stringify(updateReq),
+        headers: { 'Content-Type': 'application/json' }
+      }).then(res => res.json()).then(() => {
+        alert("Data updated successfully!");
+        resetForm();
+      });
+    }
+
+    window.onload = () => {
+      resetForm();
+    }
+  </script>
+</head>
+<body>
+  <h2>Student Enrollment Form</h2>
+  <form onsubmit="return false;">
+    <label>Roll No:</label><br>
+    <input type="text" id="rollNo" onblur="checkPrimaryKey()"><br><br>
+
+    <label>Full Name:</label><br>
+    <input type="text" id="fullName"><br><br>
+
+    <label>Class:</label><br>
+    <input type="text" id="class"><br><br>
+
+    <label>Birth Date:</label><br>
+    <input type="date" id="birthDate"><br><br>
+
+    <label>Address:</label><br>
+    <input type="text" id="address"><br><br>
+
+    <label>Enrollment Date:</label><br>
+    <input type="date" id="enrollDate"><br><br>
+
+    <button id="saveBtn" onclick="saveData()">Save</button>
+    <button id="updateBtn" onclick="updateData()">Update</button>
+    <button id="resetBtn" onclick="resetForm()">Reset</button>
+  </form>
+</body>
+</html>
